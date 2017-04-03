@@ -1,12 +1,15 @@
 CC=gcc
 DBGCFLAGS=-g -Wall# -pg # note the gprof option
 CFLAGS=-O2
-EXES=base1w
+EXES=base1w basemw
 
-# lnarr, simple line arrays from a single file
+# very basic, just accepts one word. on command line.
 base1w: base1w.c
 	${CC} ${DBGCFLAGS} -o $@ $^
 
+# multi word
+basemw: basemw.c
+	${CC} ${DBGCFLAGS} -o $@ $^
 
 .PHONY: clean
 
