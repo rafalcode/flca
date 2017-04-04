@@ -22,7 +22,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define GBUF 4
+#define GBUF 2
 
 /* quick macro for conditionally enlarging a char pointer, space always available for final null char */
 #define CONDREALLOC(x, b, c, a, t); \
@@ -43,60 +43,67 @@ typedef struct /* n_sza, name and size type*/
     unsigned sz; /* size of array */
 } n_sza_t; /* sequence index and number of symbols */
 
-n_sz_t *rdname(char *name)
+int rdname(FILE *fin, n_sz_t *ns)
 {
-    int i, c;
-    n_sz_t *ns=malloc(sizeof(n_sz_t));;
+    int i, c, ret;
+	char oldc='\0'; /* this mechanism used to take care of file which end with a \n and then a EOF */
     ns->sz=GBUF; /* we tell a lie in the beginning */
     ns->n=calloc(ns->sz, sizeof(char));
 
     i=0;
-    while( (c=name[i]) != '\0') {
+    for(;;) {
+        c = fgetc(fin);
+        if( c== '\n') {
+			ret=0;
+            break;
+		} else if (c==EOF) {
+			if(oldc=='\n')
+				ret=2;
+			else
+				ret=1;
+            break;
+		}
         CONDREALLOC(i, ns->sz, GBUF, ns->n, char);
         ns->n[i]=(char)c;
         i++;
+		oldc=(char)c;
     }
+	if(ret==2) {
+		free(ns->n);
+		return ret;
+	}
+
     ns->n[i++]='\0';
+	printf("%i|%u\n", i, ns->sz); 
     ns->sz=i; /* will be size including zero */
     ns->n=realloc(ns->n, ns->sz*sizeof(char));
-    return ns;
+    return ret;
 }
 
-void rdname2(char *name, n_sz_t *ns)
+n_sza_t *rdmnams(char *fname)
 {
-    int i, c;
-    ns->sz=GBUF; /* we tell a lie in the beginning */
-    ns->n=calloc(ns->sz, sizeof(char));
-
-    i=0;
-    while( (c=name[i]) != '\0') {
-        CONDREALLOC(i, ns->sz, GBUF, ns->n, char);
-        ns->n[i]=(char)c;
-        i++;
-    }
-    ns->n[i++]='\0';
-    ns->sz=i; /* will be size including zero */
-    ns->n=realloc(ns->n, ns->sz*sizeof(char));
-    return;
-}
-
-n_sza_t *rdmnams(char **namarr, int quan) /* Read multi nams */
-{
-    int i;
+    FILE *fin=fopen(fname, "r");
+    int i=0;
     n_sza_t *nsa=malloc(sizeof(n_sza_t));;
     nsa->sz=GBUF; /* we tell a lie in the beginning */
     nsa->ns=malloc(nsa->sz*sizeof(n_sz_t));
+	int ret;
 
-    for(i=0;i<quan;++i) {
+	while( !(ret=(rdname(fin, nsa->ns+i))) ) {
         CONDREALLOC(i, nsa->sz, GBUF, nsa->ns, n_sz_t);
-	 	rdname2(namarr[i], nsa->ns+i);
-    }
+		i++;
+	}
+	if(ret==2)
+		i--;
+	printf("ret:%i\n", ret); 
     
 	/* normalize the array of structs inside nsa */
+	/* note that it will be one bigger */
 	nsa->ns=realloc(nsa->ns, i*sizeof(n_sz_t));
 	/* note how the nsa->ns[i].n do not need freeing, rdnam does its own normalizing */
     nsa->sz=i;
 
+	fclose(fin);
     return nsa;
 }
 
@@ -109,7 +116,7 @@ int main(int argc, char *argv[])
     }
 
     int i, j;
-    n_sza_t *nsa=rdmnams(argv+1, argc-1);
+    n_sza_t *nsa=rdmnams(argv[1]);
 
     for(j=0;j<nsa->sz;++j) {
 		printf("Your word #%i needs %u char storage and ws read as: \"", j, nsa->ns[j].sz); 
@@ -117,6 +124,7 @@ int main(int argc, char *argv[])
             putchar(nsa->ns[j].n[i]);
         printf("\"\n"); 
     }
+	printf("In total, there were %u words\n", nsa->sz);
 
     for(j=0; j<nsa->sz; ++j) {
         free(nsa->ns[j].n);
