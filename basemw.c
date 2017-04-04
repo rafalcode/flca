@@ -36,8 +36,8 @@ typedef struct /* n_sz, name and size type*/
 
 typedef struct /* n_sza, name and size type*/
 {
-    n_sz_t *ns; /* name types*/
-    unsigned sz; /* name size, also buffer */
+    n_sz_t *ns; /* NameS ... an array of n_sz_t's */
+    unsigned sz; /* size of array */
 } n_sza_t; /* sequence index and number of symbols */
 
 n_sz_t *rdname(char *name)
@@ -59,25 +59,29 @@ n_sz_t *rdname(char *name)
     return ns;
 }
 
-n_sz_t **rdmnams(char *namarr[])
+n_sza_t *rdmnams(char *namarr[]) /* Read multi nams */
 {
-    int i;
-    n_sz_t *c=NULL;
+    int i, j;
+    // n_sz_t *c=NULL;
     n_sza_t *nsa=malloc(sizeof(n_sza_t));;
     nsa->sz=GBUF; /* we tell a lie in the beginning */
     nsa->ns=malloc(nsa->sz*sizeof(n_sz_t));
 
     i=0;
-    while( (c=rdname(namarr[i])) != NULL) {
+    // while( (c=rdname(namarr[i])) != NULL) {
+    //     CONDREALLOC(i, nsa->sz, GBUF, nsa->ns, n_sz_t);
+    //     nsa->ns[i].sz=c->sz;
+    //     memcpy(nsa->ns[i].n, c->n, nsa->ns[i].sz*sizeof(char));
+    //     i++;
+	// 	free(c);
+    // }
+    while( (&(nsa->ns[i])=rdname(namarr[i])) != NULL) {
         CONDREALLOC(i, nsa->sz, GBUF, nsa->ns, n_sz_t);
-        nsa->ns[i].sz=c->sz;
-        memcpy(nsa->ns[i].n, c->n, nsa->ns[i].sz*sizeof(char));
         i++;
     }
-    for(j=i; j<nsa->sz; ++j) {
-        free(nsa->ns[j]->n);
-        free(nsa->ns[j]);
-    }
+    for(j=i; j<nsa->sz; ++j)
+        free(nsa->ns[j].n);
+    free(nsa->ns);
     nsa->sz=i;
 
     return nsa;
@@ -86,25 +90,25 @@ n_sz_t **rdmnams(char *namarr[])
 int main(int argc, char *argv[])
 {
     /* argument accounting: remember argc, the number of arguments, _includes_ the executable */
-    if(argc!=2) {
-        printf("Usage this very basic program only accepts one argument, a name (probably a file name)");
+    if(argc==1) {
+        printf("Usage: This program should be fed any number of string arguments\n");
         exit(EXIT_FAILURE);
     }
 
     int i, j;
-    n_sz_t *ns=rdname(argv[1]);
-    printf("Your word needs %u char storage and ws read as: \"", ns->sz); 
+    n_sza_t *nsa=rdmnams(argv+1);
 
     for(j=0;j<nsa->sz;++j) {
-        for(i=0;i<ns->sz;++i) 
-            putchar(nsa->ns[j]->n[i]);
+		printf("Your word #%i needs %u char storage and ws read as: \"", j, nsa->ns[j].sz); 
+        for(i=0;i<nsa->ns[j].sz;++i) 
+            putchar(nsa->ns[j].n[i]);
         printf("\"\n"); 
     }
 
     for(j=0; j<nsa->sz; ++j) {
-        free(nsa->ns[j]->n);
-        free(nsa->ns[j]);
-    }
+        free(nsa->ns[j].n);
+	}
+	free(nsa->ns);
     free(nsa);
     return 0;
 }
