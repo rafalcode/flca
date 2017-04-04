@@ -1,5 +1,5 @@
-/* rdfasta.c: a multifasta summarizer iof mine repurposed to a read & store fasta idlines. merely a protype for pit2f.c's 1st arg
-   Copyright (C) 2014  Ramon Fallon
+/* basemw.c: academic really, takes strings from command line and puts them into a struct of an array for structs.
+   Copyright (C) 2017  Ramon Fallon
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License
@@ -15,6 +15,9 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
    */
+/* What does this serve?
+ * 1. show how the CONDREALLOC macro is good for structs too
+ */
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -59,29 +62,39 @@ n_sz_t *rdname(char *name)
     return ns;
 }
 
-n_sza_t *rdmnams(char *namarr[]) /* Read multi nams */
+void rdname2(char *name, n_sz_t *ns)
 {
-    int i, j;
-    // n_sz_t *c=NULL;
+    int i, c;
+    ns->sz=GBUF; /* we tell a lie in the beginning */
+    ns->n=calloc(ns->sz, sizeof(char));
+
+    i=0;
+    while( (c=name[i]) != '\0') {
+        CONDREALLOC(i, ns->sz, GBUF, ns->n, char);
+        ns->n[i]=(char)c;
+        i++;
+    }
+    ns->n[i++]='\0';
+    ns->sz=i; /* will be size including zero */
+    ns->n=realloc(ns->n, ns->sz*sizeof(char));
+    return;
+}
+
+n_sza_t *rdmnams(char **namarr, int quan) /* Read multi nams */
+{
+    int i;
     n_sza_t *nsa=malloc(sizeof(n_sza_t));;
     nsa->sz=GBUF; /* we tell a lie in the beginning */
     nsa->ns=malloc(nsa->sz*sizeof(n_sz_t));
 
-    i=0;
-    // while( (c=rdname(namarr[i])) != NULL) {
-    //     CONDREALLOC(i, nsa->sz, GBUF, nsa->ns, n_sz_t);
-    //     nsa->ns[i].sz=c->sz;
-    //     memcpy(nsa->ns[i].n, c->n, nsa->ns[i].sz*sizeof(char));
-    //     i++;
-	// 	free(c);
-    // }
-    while( (&(nsa->ns[i])=rdname(namarr[i])) != NULL) {
+    for(i=0;i<quan;++i) {
         CONDREALLOC(i, nsa->sz, GBUF, nsa->ns, n_sz_t);
-        i++;
+	 	rdname2(namarr[i], nsa->ns+i);
     }
-    for(j=i; j<nsa->sz; ++j)
-        free(nsa->ns[j].n);
-    free(nsa->ns);
+    
+	/* normalize the array of structs inside nsa */
+	nsa->ns=realloc(nsa->ns, i*sizeof(n_sz_t));
+	/* note how the nsa->ns[i].n do not need freeing, rdnam does its own normalizing */
     nsa->sz=i;
 
     return nsa;
@@ -96,7 +109,7 @@ int main(int argc, char *argv[])
     }
 
     int i, j;
-    n_sza_t *nsa=rdmnams(argv+1);
+    n_sza_t *nsa=rdmnams(argv+1, argc-1);
 
     for(j=0;j<nsa->sz;++j) {
 		printf("Your word #%i needs %u char storage and ws read as: \"", j, nsa->ns[j].sz); 
@@ -108,7 +121,7 @@ int main(int argc, char *argv[])
     for(j=0; j<nsa->sz; ++j) {
         free(nsa->ns[j].n);
 	}
-	free(nsa->ns);
+    free(nsa->ns);
     free(nsa);
     return 0;
 }
