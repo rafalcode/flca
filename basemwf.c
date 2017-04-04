@@ -46,7 +46,7 @@ typedef struct /* n_sza, name and size type*/
 int rdname(FILE *fin, n_sz_t *ns)
 {
     int i, c, ret;
-	char oldc='\0'; /* this mechanism used to take care of file which end with a \n and then a EOF */
+	char oldc='\n'; /* this mechanism used to take care of file which end with a \n and then a EOF */
     ns->sz=GBUF; /* we tell a lie in the beginning */
     ns->n=calloc(ns->sz, sizeof(char));
 
@@ -57,6 +57,7 @@ int rdname(FILE *fin, n_sz_t *ns)
 			ret=0;
             break;
 		} else if (c==EOF) {
+			/* we try to catch out situation of line being only an EOF! */
 			if(oldc=='\n')
 				ret=2;
 			else
@@ -93,9 +94,6 @@ n_sza_t *rdmnams(char *fname)
         CONDREALLOC(i, nsa->sz, GBUF, nsa->ns, n_sz_t);
 		i++;
 	}
-	if(ret==2)
-		i--;
-	printf("ret:%i\n", ret); 
     
 	/* normalize the array of structs inside nsa */
 	/* note that it will be one bigger */
