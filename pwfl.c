@@ -31,6 +31,14 @@
 		(a)=realloc((a), (b)*sizeof(t)); \
 	}
 
+typedef unsigned char boole;
+
+typedef struct  /* opts_true: a structure for the options reflecting their true types */
+{
+    boole s; /* just the pairwise ops array sanity check */
+    boole q; /* print out nothing. just give any errors, if any */
+} opts_t;
+
 typedef struct /* n_sz, name and size type*/
 {
 	char *n; /* name */
@@ -42,6 +50,54 @@ typedef struct /* n_sza, name and size type*/
 	n_sz_t *ns; /* NameS ... an array of n_sz_t's */
 	unsigned sz; /* size of array */
 } n_sza_t; /* sequence index and number of symbols */
+
+
+int catchopts(opts_t *opts, int oargc, char **oargv)
+{
+	int c;
+	opterr = 0;
+
+	while ((c = getopt (oargc, oargv, "zs")) != -1)
+		switch (c) {
+			case 'q':
+				opts->q = 1;
+				break;
+			case 's':
+				opts->s = 1;
+				break;
+			case '?':
+				/* general error state? */
+				if(isprint (optopt))
+					fprintf (stderr, "`-%c' is not a valid option for this program.\n", optopt);
+				else
+					fprintf (stderr, "Unknown option character `\\x%x'.\n", optopt);
+				return 1;
+			default:
+				abort();
+		}
+	return 0;
+}
+
+void snckpwoa(n_sza_t *nsa) /* sanity check pairwise ops array */
+{
+    int i, j;
+	int npwc=nsa->sz*(nsa->sz-1)/2; // well known, from the maths.
+	printf("Info: %u filenames to be compared, %i pairwise comparisons\n", nsa->sz, npwc);
+	int nc=nsa->sz-1; /* max number of columns of pairwise array */
+	int nr=nc; /* number of rows, this is not needed but it helps clarity */
+
+	int mj, mi=0;
+    printf("Here is how an array of the pairwise operations would look.\n"); 
+	for(i=0;i<nr;++i) {
+		mj=nc-i; // gradually decreasing extent of the column run
+        printf("Name \"%s\" against:\n", nsa->ns[i].n);
+		for(j=0;j<mj;++j)
+			printf("@ pos %i: %s | ", mi+j, nsa->ns[i+j+1].n);
+        printf("\n");
+		mi+=nsa->sz-i-1; // cumulative start position for the column run.
+	}
+    return;
+}
 
 int rdname(FILE *fin, n_sz_t *ns)
 {
@@ -113,21 +169,9 @@ int main(int argc, char *argv[])
 		exit(EXIT_FAILURE);
 	}
 
-	int i, j;
+	int j;
 	n_sza_t *nsa=rdmnams(argv[1]);
-
-	int npwc=nsa->sz*(nsa->sz-1)/2; // well known, from the maths.
-	printf("Info: %u filenames to be compared, %i pairwise comparisons\n", nsa->sz, npwc);
-	int nc=nsa->sz-1; /* max number of columns of pairwise array */
-	int nr=nc; /* number of rows, this is not needed but it helps clarity */
-
-	int mj, mi=0;
-	for(i=0;i<nr;++i) {
-		mj=nc-i; // gradually decreasing extent of the column run
-		for(j=0;j<mj;++j)
-			printf("%s vs. %s\n", nsa->ns[mi+j].n, nsa->ns[i+j+1].n);
-		mi+=nsa->sz-i-1; // cumulative start position for the column run.
-	}
+    snckpwoa(nsa);
 
 	/* Clean up */
 	for(j=0; j<nsa->sz; ++j) {
