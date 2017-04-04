@@ -11,6 +11,10 @@ base1w: base1w.c
 basemw: basemw.c
 	${CC} ${DBGCFLAGS} -o $@ $^
 
+# multi word file
+basemwf: basemwf.c
+	${CC} ${DBGCFLAGS} -o $@ $^
+
 .PHONY: clean
 
 clean:

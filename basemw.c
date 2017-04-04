@@ -17,6 +17,7 @@
    */
 /* What does this serve?
  * 1. show how the CONDREALLOC macro is good for structs too
+ * 2. create the struct in the parent function, pass as ptr argument to a void child function: this is the best
  */
 #include <stdio.h>
 #include <stdlib.h>
@@ -43,26 +44,7 @@ typedef struct /* n_sza, name and size type*/
     unsigned sz; /* size of array */
 } n_sza_t; /* sequence index and number of symbols */
 
-n_sz_t *rdname(char *name)
-{
-    int i, c;
-    n_sz_t *ns=malloc(sizeof(n_sz_t));;
-    ns->sz=GBUF; /* we tell a lie in the beginning */
-    ns->n=calloc(ns->sz, sizeof(char));
-
-    i=0;
-    while( (c=name[i]) != '\0') {
-        CONDREALLOC(i, ns->sz, GBUF, ns->n, char);
-        ns->n[i]=(char)c;
-        i++;
-    }
-    ns->n[i++]='\0';
-    ns->sz=i; /* will be size including zero */
-    ns->n=realloc(ns->n, ns->sz*sizeof(char));
-    return ns;
-}
-
-void rdname2(char *name, n_sz_t *ns)
+void rdname(char *name, n_sz_t *ns)
 {
     int i, c;
     ns->sz=GBUF; /* we tell a lie in the beginning */
@@ -89,7 +71,7 @@ n_sza_t *rdmnams(char **namarr, int quan) /* Read multi nams */
 
     for(i=0;i<quan;++i) {
         CONDREALLOC(i, nsa->sz, GBUF, nsa->ns, n_sz_t);
-	 	rdname2(namarr[i], nsa->ns+i);
+	 	rdname(namarr[i], nsa->ns+i);
     }
     
 	/* normalize the array of structs inside nsa */
