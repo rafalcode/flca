@@ -47,63 +47,69 @@ typedef struct /* n_sza, name and size type*/
 void rdname(char *name, n_sz_t *ns)
 {
     int i, c;
+	unsigned char LOWERCASE;
     ns->sz=GBUF; /* we tell a lie in the beginning */
     ns->n=calloc(ns->sz, sizeof(char));
 
     i=0;
     while( (c=name[i]) != '\0') {
-        CONDREALLOC(i, ns->sz, GBUF, ns->n, char);
-        ns->n[i]=(char)c;
-        i++;
-    }
-    ns->n[i++]='\0';
-    ns->sz=i; /* will be size including zero */
-    ns->n=realloc(ns->n, ns->sz*sizeof(char));
-    return;
+		CONDREALLOC(i, ns->sz, GBUF, ns->n, char);
+		ns->n[i]=(char)c;
+		if((c>=97) & (c<=122)) {
+			LOWERCASE=1;
+		} else {
+			LOWERCASE=0;
+		}
+		i++;
+	}
+	ns->n[i++]='\0';
+	ns->sz=i; /* will be size including zero */
+	ns->n=realloc(ns->n, ns->sz*sizeof(char));
+	return;
 }
 
 n_sza_t *rdmnams(char **namarr, int quan) /* Read multi nams */
 {
-    int i;
-    n_sza_t *nsa=malloc(sizeof(n_sza_t));;
-    nsa->sz=GBUF; /* we tell a lie in the beginning */
-    nsa->ns=malloc(nsa->sz*sizeof(n_sz_t));
+	int i;
+	n_sza_t *nsa=malloc(sizeof(n_sza_t));;
+	nsa->sz=GBUF; /* we tell a lie in the beginning */
+	nsa->ns=malloc(nsa->sz*sizeof(n_sz_t));
 
-    for(i=0;i<quan;++i) {
-        CONDREALLOC(i, nsa->sz, GBUF, nsa->ns, n_sz_t);
-	 	rdname(namarr[i], nsa->ns+i);
-    }
-    
+	for(i=0;i<quan;++i) {
+		CONDREALLOC(i, nsa->sz, GBUF, nsa->ns, n_sz_t);
+		rdname(namarr[i], nsa->ns+i);
+	}
+
 	/* normalize the array of structs inside nsa */
 	nsa->ns=realloc(nsa->ns, i*sizeof(n_sz_t));
 	/* note how the nsa->ns[i].n do not need freeing, rdnam does its own normalizing */
-    nsa->sz=i;
+	nsa->sz=i;
 
-    return nsa;
+	return nsa;
 }
 
 int main(int argc, char *argv[])
 {
-    /* argument accounting: remember argc, the number of arguments, _includes_ the executable */
-    if(argc==1) {
-        printf("Usage: This program should be fed any number of string arguments\n");
-        exit(EXIT_FAILURE);
-    }
-
-    int i, j;
-    n_sza_t *nsa=rdmnams(argv+1, argc-1);
-
-    for(j=0;j<nsa->sz;++j) {
-		printf("Your word #%i needs %u char storage and ws read as: \"", j, nsa->ns[j].sz); 
-        for(i=0;i<nsa->ns[j].sz;++i) 
-            putchar(nsa->ns[j].n[i]);
-        printf("\"\n"); 
-    }
-
-    for(j=0; j<nsa->sz; ++j) {
-        free(nsa->ns[j].n);
+	/* argument accounting: remember argc, the number of arguments, _includes_ the executable */
+	if(argc==1) {
+		printf("Usage: This program should be fed any number of string arguments\n");
+		exit(EXIT_FAILURE);
 	}
-    free(nsa->ns);
-    free(nsa);
-    return 0;
+
+	int i, j;
+	n_sza_t *nsa=rdmnams(argv+1, argc-1);
+
+	for(j=0;j<nsa->sz;++j) {
+		printf("Your word #%i needs %u char storage and is read as: \"", j, nsa->ns[j].sz); 
+		for(i=0;i<nsa->ns[j].sz;++i) 
+			putchar(nsa->ns[j].n[i]);
+		printf("\"\n"); 
+	}
+
+	for(j=0; j<nsa->sz; ++j) {
+		free(nsa->ns[j].n);
+	}
+	free(nsa->ns);
+	free(nsa);
+	return 0;
 }
